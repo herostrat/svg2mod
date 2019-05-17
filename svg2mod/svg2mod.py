@@ -60,6 +60,7 @@ def main():
         exported = Svg2ModExportPretty(
             imported,
             args.output_file_name,
+            args.center,
             args.scale_factor,
             args.precision,
             args.dpi,
@@ -75,10 +76,10 @@ def main():
                 exported = Svg2ModExportLegacyUpdater(
                     imported,
                     args.output_file_name,
+                    args.center,
                     args.scale_factor,
                     args.precision,
                     args.dpi,
-                    include_reverse = not args.front_only,
                 )
 
             except Exception as e:
@@ -91,11 +92,11 @@ def main():
             exported = Svg2ModExportLegacy(
                 imported,
                 args.output_file_name,
+                args.center,
                 args.scale_factor,
                 args.precision,
                 use_mm = use_mm,
                 dpi = args.dpi,
-                include_reverse = not args.front_only,
             )
 
     # Export the footprint:
@@ -513,6 +514,7 @@ class Svg2ModExport( object ):
         self,
         svg2mod_import,
         file_name,
+        center,
         scale_factor = 1.0,
         precision = 20.0,
         use_mm = True,
@@ -528,6 +530,7 @@ class Svg2ModExport( object ):
 
         self.imported = svg2mod_import
         self.file_name = file_name
+        self.center = center
         self.scale_factor = scale_factor
         self.precision = precision
         self.use_mm = use_mm
@@ -539,15 +542,21 @@ class Svg2ModExport( object ):
 
         min_point, max_point = self.imported.svg.bbox()
 
-        # Center the drawing:
-        adjust_x = min_point.x + ( max_point.x - min_point.x ) / 2.0
-        adjust_y = min_point.y + ( max_point.y - min_point.y ) / 2.0
+        if(self.center):
+            # Center the drawing:
+            adjust_x = min_point.x + ( max_point.x - min_point.x ) / 2.0
+            adjust_y = min_point.y + ( max_point.y - min_point.y ) / 2.0
 
-        self.translation = svg.Point(
-            0.0 - adjust_x,
-            0.0 - adjust_y,
-        )
+            self.translation = svg.Point(
+                0.0 - adjust_x,
+                0.0 - adjust_y,
+            )
 
+        else:
+            self.translation = svg.Point(
+                0.0,
+                0.0,
+            )
 
     #------------------------------------------------------------------------
 
@@ -747,11 +756,16 @@ class Svg2ModExportLegacy( Svg2ModExport ):
 
     layer_map = {
         #'inkscape-name' : [ kicad-front, kicad-back ],
-        'Cu' : [ 15, 0 ],
-        'Adhes' : [ 17, 16 ],
-        'Paste' : [ 19, 18 ],
-        'SilkS' : [ 21, 20 ],
-        'Mask' : [ 23, 22 ],
+        'F.Cu' : [ 15, 15 ],
+        'B.Cu' : [ 0, 0 ],
+        'F.Adhes' : [ 17, 17 ],
+        'B.Adhes' : [ 16, 16 ],
+        'F.Paste' : [ 19, 19 ],
+        'B.Paste' : [ 18, 18 ],
+        'F.SilkS' : [ 21, 21 ],
+        'B.SilkS' : [ 20, 20 ],
+        'F.Mask' : [ 23, 23 ],
+        'B.Mask' : [ 22, 22 ],
         'Dwgs.User' : [ 24, 24 ],
         'Cmts.User' : [ 25, 25 ],
         'Eco1.User' : [ 26, 26 ],
@@ -766,22 +780,23 @@ class Svg2ModExportLegacy( Svg2ModExport ):
         self,
         svg2mod_import,
         file_name,
+        center,
         scale_factor = 1.0,
         precision = 20.0,
         use_mm = True,
         dpi = DEFAULT_DPI,
-        include_reverse = True,
     ):
         super( Svg2ModExportLegacy, self ).__init__(
             svg2mod_import,
             file_name,
+            center,
             scale_factor,
             precision,
             use_mm,
             dpi,
         )
 
-        self.include_reverse = include_reverse
+        self.include_reverse = True
 
 
     #------------------------------------------------------------------------
@@ -957,6 +972,7 @@ class Svg2ModExportLegacyUpdater( Svg2ModExportLegacy ):
         self,
         svg2mod_import,
         file_name,
+        center,
         scale_factor = 1.0,
         precision = 20.0,
         dpi = DEFAULT_DPI,
@@ -968,11 +984,11 @@ class Svg2ModExportLegacyUpdater( Svg2ModExportLegacy ):
         super( Svg2ModExportLegacyUpdater, self ).__init__(
             svg2mod_import,
             file_name,
+            center,
             scale_factor,
             precision,
             use_mm,
             dpi,
-            include_reverse,
         )
 
 
@@ -1180,14 +1196,25 @@ class Svg2ModExportPretty( Svg2ModExport ):
 
     layer_map = {
         #'inkscape-name' : kicad-name,
-        'Cu' :    "{}.Cu",
-        'Adhes' : "{}.Adhes",
-        'Paste' : "{}.Paste",
-        'SilkS' : "{}.SilkS",
-        'Mask' :  "{}.Mask",
-        'CrtYd' : "{}.CrtYd",
-        'Fab' :   "{}.Fab",
-        'Edge.Cuts' : "Edge.Cuts"
+        'F.Cu' :    "F.Cu",
+        'B.Cu' :    "B.Cu",
+        'F.Adhes' : "F.Adhes",
+        'B.Adhes' : "B.Adhes",
+        'F.Paste' : "F.Paste",
+        'B.Paste' : "B.Paste",
+        'F.SilkS' : "F.SilkS",
+        'B.SilkS' : "B.SilkS",
+        'F.Mask' :  "F.Mask",
+        'B.Mask' :  "B.Mask",
+        'Dwgs.User' : "Dwgs.User",
+        'Cmts.User' : "Cmts.User",
+        'Eco1.User' : "Eco1.User",
+        'Eco2.User' : "Eco2.User",
+        'Edge.Cuts' : "Edge.Cuts",
+        'F.CrtYd' : "F.CrtYd",
+        'B.CrtYd' : "B.CrtYd",
+        'F.Fab' :   "F.Fab",
+        'B.Fab' :   "B.Fab"
     }
 
 
@@ -1195,10 +1222,7 @@ class Svg2ModExportPretty( Svg2ModExport ):
 
     def _get_layer_name( self, name, front ):
 
-        if front:
-            return self.layer_map[ name ].format("F")
-        else:
-            return self.layer_map[ name ].format("B")
+        return self.layer_map[ name ]
 
 
     #------------------------------------------------------------------------
@@ -1407,15 +1431,6 @@ def get_arguments():
     )
 
     parser.add_argument(
-        '--front-only',
-        dest = 'front_only',
-        action = 'store_const',
-        const = True,
-        help = "omit output of back module (legacy output format)",
-        default = False,
-    )
-
-    parser.add_argument(
         '--format',
         type = str,
         dest = 'format',
@@ -1444,6 +1459,15 @@ def get_arguments():
         default = DEFAULT_DPI,
     )    
     
+    parser.add_argument(
+        '--center',
+        dest = 'center',
+        action = 'store_const',
+        const = True,
+        help = "Center the module to the center of the bounding box",
+        default = False,
+    )
+
     return parser.parse_args(), parser
 
 
@@ -1455,4 +1479,3 @@ main()
 
 
 #----------------------------------------------------------------------------
-# vi: set et sts=4 sw=4 ts=4:
